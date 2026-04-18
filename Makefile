@@ -9,7 +9,7 @@ CFLAGS  := -march=rv64imac -mabi=lp64 -mcmodel=medany \
            -Wall -Wextra \
            -Isrc
 
-SRCS    := src/startup.c src/uart.c src/main.c
+SRCS    := src/startup.c src/uart.c src/term.c src/main.c
 TARGET  := hello
 BIN     := bin
 

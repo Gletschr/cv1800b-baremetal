@@ -18,11 +18,24 @@ void uart_init(unsigned long base, unsigned int clk_hz, unsigned int baud)
     /* Round to nearest integer to minimise baud rate error. */
     unsigned int div = (clk_hz + 8u * baud) / (16u * baud);
 
-    UART_LCR(base) = LCR_DLAB;          /* unlock divisor registers    */
-    UART_DLL(base) = div & 0xFFu;       /* divisor low byte            */
-    UART_DLH(base) = (div >> 8) & 0xFFu;/* divisor high byte           */
-    UART_LCR(base) = LCR_8N1;           /* 8-N-1, clears DLAB          */
-    UART_FCR(base) = 0x01u;             /* enable TX and RX FIFOs      */
+    UART_LCR(base) = LCR_DLAB;           /* unlock divisor registers     */
+    UART_DLL(base) = div & 0xFFu;        /* divisor low byte             */
+    UART_DLH(base) = (div >> 8) & 0xFFu; /* divisor high byte            */
+    UART_LCR(base) = LCR_8N1;            /* 8-N-1, clears DLAB           */
+    UART_FCR(base) = 0x01u;              /* enable TX and RX FIFOs       */
+}
+
+/*
+ * uart_getc — receive one character.
+ *
+ * Spins on LSR[0] (RX data ready) until a byte is available in the RX FIFO,
+ * then reads and returns it from the RX buffer register.
+ */
+char uart_getc(unsigned long base)
+{
+    while (!(UART_LSR(base) & LSR_RX_READY))
+        ;
+    return (char)(UART_RBR(base) & 0xFFu);
 }
 
 /*

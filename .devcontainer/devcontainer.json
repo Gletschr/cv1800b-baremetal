@@ -1,0 +1,16 @@
+{
+    "name": "cv1800b-baremetal",
+    "build": {
+        "dockerfile": "../Dockerfile",
+        "context": ".."
+    },
+    // --privileged gives the container access to host devices (e.g. /dev/mmcblk0)
+    // so the "flash" build target can write to the microSD card directly.
+    "runArgs": ["--privileged"],
+    "customizations": {
+        "jetbrains": {
+            "backend": "CLion"
+        }
+    },
+    "remoteUser": "root"
+}
