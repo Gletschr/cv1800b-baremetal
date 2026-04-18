@@ -14,10 +14,13 @@ if [[ $# -lt 1 ]]; then
 fi
 
 DEV="$1"
-FIP="$(dirname "$0")/../bin/fip.bin"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+FIP="${SCRIPT_DIR}/../build/fip.bin"
 
 if [[ ! -f "$FIP" ]]; then
-    echo "fip.bin not found — run 'make' first"
+    echo "fip.bin not found — build the project first:"
+    echo "  cmake -S . -B build -DCMAKE_TOOLCHAIN_FILE=cmake/riscv64-baremetal.cmake"
+    echo "  cmake --build build"
     exit 1
 fi
 
@@ -31,12 +34,10 @@ read -r -p "Continue? [y/N] " ans
 [[ "$ans" =~ ^[Yy]$ ]] || { echo "Aborted."; exit 0; }
 
 echo "==> Partitioning $DEV"
-# Wipe existing partition table, then create one primary FAT32 partition
 sudo parted -s "$DEV" \
     mklabel msdos \
     mkpart primary fat32 1MiB 100%
 
-# Give the kernel a moment to re-read the partition table
 sleep 1
 sudo partprobe "$DEV" 2>/dev/null || true
 sleep 1
@@ -59,8 +60,31 @@ sudo sync
 sudo umount "$MNT"
 rmdir "$MNT"
 
-echo "==> Done.  Insert SD card into board, connect UART adapter:"
-echo "    laptop RX  →  GP12 (UART0 TX, board side)"
-echo "    laptop TX  →  GP13 (UART0 RX, board side)"
-echo "    GND        →  GND"
-echo "    open terminal: screen /dev/ttyUSB0 115200"
+# Detect the most likely serial device for the UART adapter
+SERIAL=""
+for dev in /dev/ttyACM0 /dev/ttyUSB0 /dev/ttyACM1 /dev/ttyUSB1; do
+    if [[ -e "$dev" ]]; then
+        SERIAL="$dev"
+        break
+    fi
+done
+
+echo ""
+echo "==> Done. SD card is ready."
+echo ""
+echo "Wiring (Milk-V Duo 40-pin header):"
+echo "  Adapter RX  →  GP12  (UART0 TX)"
+echo "  Adapter TX  →  GP13  (UART0 RX)"
+echo "  Adapter GND →  GND"
+echo ""
+if [[ -n "$SERIAL" ]]; then
+    echo "Serial device detected: $SERIAL"
+    echo "Connect with:"
+    echo "  picocom -b 115200 $SERIAL"
+else
+    echo "No serial device detected yet. Once the adapter is plugged in, connect with:"
+    echo "  picocom -b 115200 /dev/ttyACM0   # or /dev/ttyUSB0"
+fi
+echo ""
+echo "Insert the SD card into the board and power on."
+echo "Exit picocom with: Ctrl+A then Ctrl+X"
