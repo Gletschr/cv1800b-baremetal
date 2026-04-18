@@ -32,28 +32,28 @@ set(COMMON_FLAGS
 # Firmware ELF target
 # ---------------------------------------------------------------------------
 
-add_executable(hello
+add_executable(firmware
     src/startup.c
     src/uart.c
     src/term.c
     src/main.c
 )
 
-target_include_directories(hello PRIVATE src)
+target_include_directories(firmware PRIVATE src)
 
-target_compile_options(hello PRIVATE
+target_compile_options(firmware PRIVATE
     ${COMMON_FLAGS}
     -Wall
     -Wextra
 )
 
-target_link_options(hello PRIVATE
+target_link_options(firmware PRIVATE
     ${COMMON_FLAGS}
     -T ${CMAKE_SOURCE_DIR}/linker.ld
 )
 
 # Re-link when the linker script changes
-set_target_properties(hello PROPERTIES
+set_target_properties(firmware PROPERTIES
     SUFFIX       ".elf"
     LINK_DEPENDS ${CMAKE_SOURCE_DIR}/linker.ld
 )
@@ -71,12 +71,12 @@ set(RTOS       /fiptool/data/cvirtos.bin)
 # ---------------------------------------------------------------------------
 
 add_custom_command(
-    OUTPUT  ${CMAKE_BINARY_DIR}/hello.bin
+    OUTPUT  ${CMAKE_BINARY_DIR}/firmware.bin
     COMMAND ${CMAKE_OBJCOPY} -O binary
-            $<TARGET_FILE:hello>
-            ${CMAKE_BINARY_DIR}/hello.bin
-    DEPENDS hello
-    COMMENT "objcopy → hello.bin"
+            $<TARGET_FILE:firmware>
+            ${CMAKE_BINARY_DIR}/firmware.bin
+    DEPENDS firmware
+    COMMENT "objcopy → firmware.bin"
 )
 
 # ---------------------------------------------------------------------------
@@ -97,13 +97,13 @@ add_custom_command(
 add_custom_command(
     OUTPUT  ${CMAKE_BINARY_DIR}/fip.bin
     COMMAND ${FIPTOOL}
-                --fsbl     ${CMAKE_BINARY_DIR}/hello.bin
+                --fsbl     ${CMAKE_BINARY_DIR}/firmware.bin
                 --ddr_param ${DDR_PARAM}
                 --opensbi  ${CMAKE_BINARY_DIR}/dummy.bin
                 --uboot    ${CMAKE_BINARY_DIR}/dummy.bin
                 --rtos     ${RTOS}
                 ${CMAKE_BINARY_DIR}/fip.bin
-    DEPENDS ${CMAKE_BINARY_DIR}/hello.bin
+    DEPENDS ${CMAKE_BINARY_DIR}/firmware.bin
             ${CMAKE_BINARY_DIR}/dummy.bin
     COMMENT "Packing FIP image → fip.bin"
 )
@@ -133,8 +133,8 @@ add_custom_target(flash
 # ---------------------------------------------------------------------------
 
 add_custom_target(disasm
-    COMMAND ${CMAKE_OBJDUMP} -d $<TARGET_FILE:hello>
-    DEPENDS hello
-    COMMENT "Disassembly of hello.elf"
+    COMMAND ${CMAKE_OBJDUMP} -d $<TARGET_FILE:firmware>
+    DEPENDS firmware
+    COMMENT "Disassembly of firmware.elf"
     USES_TERMINAL
 )
